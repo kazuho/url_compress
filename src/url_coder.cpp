@@ -1,10 +1,10 @@
-extern "C" {
-#include <assert.h>
-}
 #include <algorithm>
 #include "url_coder.h"
 #include "range_coder.hpp"
-#include  "rctable.c"
+#include "rctable.c"
+#ifdef USE_CHARMAP
+#include "chreorder.c"
+#endif
 
 using namespace std;
 
@@ -51,29 +51,49 @@ public:
   writer_t &operator++(int) { return *this; }
 };
 
-int url_compress(const char *url, char *comp)
+inline int get_pred_map(int p3, int p2, int p1)
+{
+  int idx = predidx1[p1];
+  if (idx < NUM_PRED_MAPS) {
+    return idx;
+  }
+  int idx2 = predidx2[idx - NUM_PRED_MAPS + p2];
+  if (idx2 < NUM_PRED_MAPS) {
+    return idx2;
+  }
+  return predidx3[idx2 - NUM_PRED_MAPS + p3];
+}
+  
+int url_compress(const char *url, size_t url_len, char *comp)
 {
   try {
     char *comp_pos = comp;
     rc_encoder_t<writer_t>
       enc(writer_t(&comp_pos, comp + URL_COMPRESS_BUFSIZE));
-    unsigned short ctx = 0;
-    const char *p = url;
+    int prev3 = 0, prev2 = 0, prev1 = 0;
+    const char *p = url, *pmax = url + url_len;
     
-    while (*p != '\0') {
-      const pred_map_t &m = predmaps[predidx[ctx]];
+    while (p != pmax) {
+      const pred_map_t &m = predmaps[get_pred_map(prev3, prev2, prev1)];
       int pch = (unsigned char)*p++, percch;
-      if (pch == '%' && (percch = decpc(p)) != 0) {
+      if (pch == '%' && pmax - p >= 2 && (percch = decpc(p)) != 0) {
 	pch = percch;
 	p += 2;
       }
-      assert(m[pch] != m[pch + 1]);
-      enc.encode(m[pch], m[pch + 1], m[256]);
-      ctx = ctx * 256 + pch;
+#ifdef USE_CHARMAP
+      pch = charmap_to_ordered[pch];
+#endif
+      if (m[pch] == m[pch + 1]) {
+	fprintf(stderr, "predmaps[%d][%d]==0\n",
+		get_pred_map(prev3, prev2, prev1), pch);
+	return -1;
+      }
+      enc.encode(m[pch] - PRED_BASE, m[pch + 1] - PRED_BASE, PRED_MAX);
+      prev3 = prev2, prev2 = prev1, prev1 = pch;
     }
     
-    const pred_map_t &m = predmaps[predidx[ctx]];
-    enc.encode(m[0], m[1], m[256]);
+    const pred_map_t &m = predmaps[get_pred_map(prev3, prev2, prev1)];
+    enc.encode(m[0] - PRED_BASE, m[1] - PRED_BASE, PRED_MAX);
     enc.final();
     
     return comp_pos - comp;
@@ -84,13 +104,17 @@ int url_compress(const char *url, char *comp)
 
 int url_decompress(const char *comp, size_t comp_len, char *url)
 {
-  rc_decoder_t<const char*, 256> dec(comp, comp + comp_len);
-  char *d = url, *max = url + URL_COMPRESS_BUFSIZE - 1;
-  unsigned short ctx = 0;
+  rc_decoder_t<const char*, rc_decoder_search_t<short, 256, PRED_BASE> >
+    dec(comp, comp + comp_len);
+  char *d = url, *max = url + URL_COMPRESS_BUFSIZE;
+  int prev3 = 0, prev2 = 0, prev1 = 0;
   while (1) {
-    const pred_map_t &m = predmaps[predidx[ctx]];
-    unsigned ch = dec.decode(m[256], m);
-    ctx = ctx * 256 + ch;
+    const pred_map_t &m = predmaps[get_pred_map(prev3, prev2, prev1)];
+    unsigned ch = dec.decode(PRED_MAX, m);
+    prev3 = prev2, prev2 = prev1, prev1 = ch;
+#ifdef USE_CHARMAP
+    ch = charmap_from_ordered[ch];
+#endif
     if (ch == '\0') {
       break;
     } else if (ch >= 0x80) {
@@ -107,8 +131,16 @@ int url_decompress(const char *comp, size_t comp_len, char *url)
       *d++ = ch;
     }
   }
-  *d = '\0';
   return d - url;
  Error:
   return -1;
+}
+
+int url_compress_nextchar(int ch)
+{
+#ifdef USE_CHARMAP
+  return charmap_from_ordered[(unsigned char)(charmap_to_ordered[ch] + 1)];
+#else
+  return (ch + 1) & 255;
+#endif
 }
