@@ -2,10 +2,12 @@ url_compress - a static PPM-based URL compressor / decompressor
 
 (c) 2008-2010 Cybozu, Labs. Inc.
 
+INTRODUCTION
+
 The library is a compressor / decompressor specifically designed to compress URLs.  Expected compression ratio is from 25% to 40% of the original size.  The compressed form does not preserve the original order however it is possible to perform a prefix search without decompressing the URLs.
 
 
-1. To build and test
+TO BUILD AND TEST
 
 Generate the compression tables.  The following example uses "corpus/travail5" as prior knowledge and generates a 4095-entry compression table set.
 
@@ -21,15 +23,20 @@ Test compression / decompression (as well as the compression ratio) using the co
   % /tmp/url_compress_test corpus/travail
 
 
-2. Adding your own corpus (prior knowledge)
+ADDING YOUR OWN CORPUS
 
 The compressor uses a static (predefined) compression table.  So it is better to use your own list of URLs as the prior knowledge.  Use the following command add your list of URLs to the corpus.
 
   % scripts/normalize_corpus.pl < your_own_url_list > corpus/your_urls
 
-Once added, follow the above section: 1. To build and Test.
+Once added, follow the above section: TO BUILD AND TEST.
 
 
-3. Using the library in your application
+USING THE LIBRARY IN YOUR APPLICATION
 
 TBD
+
+
+THANKS TO
+
+@__travail__ and @fujiwara for providing the corpus.
