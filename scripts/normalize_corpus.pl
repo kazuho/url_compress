@@ -15,6 +15,7 @@ while (my $url = <STDIN>) {
         }
         $path =~ s/\%([0-9A-Fa-f][0-9A-Fa-f])/'%' . uc $1/eg;
         $path =~ s/([\x80-\xff])/sprintf("%%%02X", ord $1)/eg;
+        $path = '/' if $path eq '';
         $url = "$proto$hostport$path";
     }
     print "$url\n";
