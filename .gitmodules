@@ -1,3 +1,3 @@
 [submodule "rangecoder"]
 	path = rangecoder
-	url = git@github.com:kazuho/rangecoder.git
+	url = git://github.com/kazuho/rangecoder.git
