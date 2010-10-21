@@ -2,7 +2,7 @@ url_compress - a static PPM-based URL compressor / decompressor
 
 (c) 2008-2010 Cybozu, Labs. Inc.
 
-The library is a compressor / decompressor specifically designed to compress URLs.  It is possible to perform a prefix search without decompressing the URLs.
+The library is a compressor / decompressor specifically designed to compress URLs.  Expected compression ratio is from 25% to 40% of the original size.  It is possible to perform a prefix search without decompressing the URLs.
 
 
 1. To build and test
