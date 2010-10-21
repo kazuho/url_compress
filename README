@@ -10,7 +10,7 @@ The library is a compressor / decompressor specifically designed to compress URL
 
 TO BUILD AND TEST
 
-Generate the compression tables.  The following example uses "corpus/travail5" as prior knowledge and generates a 4095-entry compression table set.
+Generate the compression tables.  The following example uses "corpus/travail5" as prior knowledge and generates a 4095-entry compression table set (which will be around 2MB in size).
 
   % scripts/build_chreorder.pl < corpus/travail5 > src/chreorder.c
   % scripts/build_rctable.pl corpus/travail5 4095 1 1 > src/rctable.c
