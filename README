@@ -2,6 +2,7 @@ url_compress - a static PPM-based URL compressor / decompressor
 
 (c) 2008-2010 Cybozu, Labs. Inc.
 
+
 INTRODUCTION
 
 The library is a compressor / decompressor specifically designed to compress URLs.  Expected compression ratio is from 25% to 40% of the original size.  The compressed form does not preserve the original order however it is possible to perform a prefix search without decompressing the URLs.
@@ -16,7 +17,7 @@ Generate the compression tables.  The following example uses "corpus/travail5" a
 
 Compile the test binary.
 
-  % g++ -DRANGE_CODER_USE_SSE -m64 -g -Wall -O2 -Irangecoder src/url_coder.cpp src/test.c -o /tmp/url_compress_test
+  % g++ -DRANGE_CODER_USE_SSE -g -Wall -O2 -Irangecoder src/url_coder.cpp src/test.c -o /tmp/url_compress_test
 
 Test compression / decompression (as well as the compression ratio) using the corpus.
 
@@ -32,9 +33,34 @@ The compressor uses a static (predefined) compression table.  So it is better to
 Once added, follow the above section: TO BUILD AND TEST.
 
 
-USING THE LIBRARY IN YOUR APPLICATION
+USING THE LIBRARY FROM MYSQL
 
-TBD
+Compile the UDF and copy it into lib/mysql/plugin (or lib/plugin) directory of your MySQL installation.  (NOTE: on OSX use -bundle instead of -shared -fPIC)
+
+  % g++ -DRANGE_CODER_USE_SSE -g -Wall -O2 -Irangecoder -shared -fPIC src/url_coder.cpp src/url_compress_udf.c -o url_compress_udf.so
+
+Then activate the UDFs using the "CREATE FUNCTION" command.
+
+  mysql> CREATE FUNCTION my_url_compress RETURNS STRING SONAME 'url_compress_udf.so';
+  mysql> CREATE FUNCTION my_url_decompress RETURNS STRING SONAME 'url_compress_udf.so';
+
+Check that the UDFs actually work.
+
+  mysql> SELECT LENGTH(my_url_compress('http://www.google.com/'));
+  +---------------------------------------------------+
+  | length(my_url_compress('http://www.google.com/')) |
+  +---------------------------------------------------+
+  |                                                 3 |
+  +---------------------------------------------------+
+  1 row in set (0.00 sec)
+  
+  mysql> select my_url_decompress(my_url_compress('http://www.google.com/'));
+  +--------------------------------------------------------------+
+  | my_url_decompress(my_url_compress('http://www.google.com/')) |
+  +--------------------------------------------------------------+
+  | http://www.google.com/                                       |
+  +--------------------------------------------------------------+
+  1 row in set (0.00 sec)
 
 
 THANKS TO
