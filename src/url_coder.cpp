@@ -27,7 +27,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <algorithm>
+extern "C" {
+#include <limits.h>
+}
+#include  <algorithm>
+#include <cstdio>
 #include "url_coder.h"
 #include "range_coder.hpp"
 #include "rctable.c"
